@@ -29,6 +29,9 @@ typedef struct ThreadParams {
   int pipeFile[2];
   sem_t sem_A_to_B, sem_B_to_A, sem_C_to_A;
   char message[255];
+
+//Hamro definition
+int end_of_file; // End of file check
   
 } ThreadParams;
 
@@ -96,10 +99,11 @@ if(pthread_create(&tid3, &attr, ThreadC, (void*)(&params))!=0)
 void initializeData(ThreadParams *params) {
   // Initialize Sempahores
   sem_init(&(params->sem_A_to_B), 0, 1);
-  
+  sem_init(&(params->sem_B_to_A), 0, 0); //Confirm with berkan
+  sem_init(&(params->sem_C_to_A), 0, 0);
   //TODO: add your code
-
-  return;
+params -> end_of_file = 0;
+  //return;
 }
 
 void *ThreadA(void *params) {
@@ -107,7 +111,7 @@ void *ThreadA(void *params) {
   
 /* note: Since the data_stract is declared as pointer. the A_thread_params->message */
 ThreadParams *A_thread_params = (ThreadParams *)(params);
-
+static const char file[] = "data.txt";
 
 printf("ThreadA\n");
 }
