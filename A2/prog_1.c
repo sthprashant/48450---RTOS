@@ -82,14 +82,14 @@ if(pthread_create(&tid3, &attr, ThreadC, (void*)(&params))!=0)
 	  perror("Error creating threads: ");
       exit(-1);
   }
-  //TODO: add your code
  
 
   // Wait on threads to finish
   pthread_join(tid1, NULL);
   pthread_join(tid2, NULL);
   pthread_join(tid3, NULL);
-  //TODO: add your code
+
+  //Close 
   close(params.pipeFile[0]);
   close(params.pipeFile[1]);
 
@@ -104,15 +104,13 @@ void initializeData(ThreadParams *params) {
   sem_init(&(params->sem_A_to_B), 0, 1);
   sem_init(&(params->sem_B_to_A), 0, 0); 
   sem_init(&(params->sem_C_to_A), 0, 0);
-  //TODO: add your code
+
 params -> endOfFile = 0;
   //return;
 }
 
 void *ThreadA(void *params) 
 {
-  //TODO: add your code
-  
 /* note: Since the data_stract is declared as pointer. the A_thread_params->message */
 ThreadParams *A_thread_params = (ThreadParams *)(params);
 static const char file[] = "data.txt";
@@ -147,7 +145,6 @@ FILE *fReader = fopen(file, "r");
 
 void *ThreadB(void *params) 
 {
-  //TODO: add your code
 
 ThreadParams *B_thread_params = (ThreadParams *)(params);
  //printf("ThreadB\n");
@@ -168,7 +165,6 @@ while(!sem_wait(&(B_thread_params->sem_C_to_A)))
 
 
 void *ThreadC(void *params) {
-  //TODO: add your code
 ThreadParams *C_thread_params = (ThreadParams *)(params);
   int lineCount = 0;
   // int eoh_flag = 0; // remove?
