@@ -1,4 +1,4 @@
-/***********************************************************************************/
+ /***********************************************************************************/
 //***********************************************************************************
 //            *************NOTE**************
 // This is a template for the subject of RTOS in University of Technology Sydney(UTS)
@@ -29,9 +29,7 @@ typedef struct ThreadParams {
   int pipeFile[2];
   sem_t sem_A_to_B, sem_B_to_A, sem_C_to_A;
   char message[255];
-
-//Hamro definition
-int end_of_file; // End of file check
+  int endofFile; // End of file check
   
 } ThreadParams;
 
@@ -92,17 +90,22 @@ if(pthread_create(&tid3, &attr, ThreadC, (void*)(&params))!=0)
   pthread_join(tid2, NULL);
   pthread_join(tid3, NULL);
   //TODO: add your code
+  close(params.pipeFile[0]);
+  close(params.pipeFile[1]);
 
+  pthread_cancel(tid1);
+  pthread_cancel(tid2);
+  pthread_cancel(tid3);
   return 0;
 }
 
 void initializeData(ThreadParams *params) {
   // Initialize Sempahores
   sem_init(&(params->sem_A_to_B), 0, 1);
-  sem_init(&(params->sem_B_to_A), 0, 0); //Confirm with berkan
+  sem_init(&(params->sem_B_to_A), 0, 0); 
   sem_init(&(params->sem_C_to_A), 0, 0);
   //TODO: add your code
-params -> end_of_file = 0;
+params -> endofFile = 0;
   //return;
 }
 
