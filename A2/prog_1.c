@@ -3,15 +3,24 @@
 //            *************NOTE**************
 // This is a template for the subject of RTOS in University of Technology Sydney(UTS)
 // Please complete the code based on the assignment requirement.
-
+//***********************************************************************************
+//***********************************************************************************
+/*
+ *	Authors: Roshish Karmacharya (11823871) and Prashant Shrestha (98136563)
+ *	Date: 06/05/2020
+ *	Topic: Pipe, Threads and Semaphore for Real Time File Reading/Writing
+*/
 //***********************************************************************************
 /***********************************************************************************/
 
 /*
-  To compile prog_1 ensure that gcc is installed and run the following command:
-  gcc prog_1.c -o prog_1 -lpthread -lrt
+			******Compile instruction********
+ * To compile prog_1 ensure that gcc is installed and run the following command:
+   gcc prog_1.c -o prog_1 -lpthread -lrt
 
 */
+
+
 #include <pthread.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -180,6 +189,7 @@ void *ThreadC(void *params)
   static const char file[] = "output.txt"; // output.txt is stored into local variable filename
 
   FILE *fWriter = fopen(file, "w"); // Open file to write
+
   if (!fWriter) // Validation check
   {
     perror(file);
@@ -193,6 +203,7 @@ void *ThreadC(void *params)
     {
       // Put the data in message from fWriter file
       fputs(C_thread_params->message, fWriter); 
+
       if (C_thread_params->endOfFile == 1) // Break after reaching end of file
         break;
     }
