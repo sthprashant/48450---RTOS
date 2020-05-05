@@ -137,19 +137,21 @@ FILE *fReader = fopen(file, "r");
   }
 
   close(A_thread_params->pipeFile[1]);
-  fclose(reader);
+  fclose(fReader);
 
   return NULL; // put (void *)
 }
 
 //printf("ThreadA\n");
+
+
 void *ThreadB(void *params) 
 {
   //TODO: add your code
 
 ThreadParams *B_thread_params = (ThreadParams *)(params);
  //printf("ThreadB\n");
-while(!sem_wait(&(B_thread_params->sem_write)))
+while(!sem_wait(&(B_thread_params->sem_C_to_A)))
   {
     read(B_thread_params->pipeFile[0], B_thread_params->message, sizeof(B_thread_params->message));
     sem_post(&(B_thread_params->sem_B_to_A));
@@ -162,6 +164,8 @@ while(!sem_wait(&(B_thread_params->sem_write)))
   return NULL; // put (void *)
 
 }
+
+
 
 void *ThreadC(void *params) {
   //TODO: add your code
