@@ -1,4 +1,4 @@
- /***********************************************************************************/
+/***********************************************************************************/
 //***********************************************************************************
 //            *************NOTE**************
 // This is a template for the subject of RTOS in University of Technology Sydney(UTS)
@@ -12,25 +12,26 @@
   gcc prog_1.c -o prog_1 -lpthread -lrt
 
 */
-#include  <pthread.h>
-#include  <stdlib.h>
-#include  <unistd.h>
-#include  <stdio.h>
-#include  <sys/types.h>
-#include  <fcntl.h>
-#include  <string.h>
-#include  <sys/stat.h>
-#include  <semaphore.h>
-#include  <sys/time.h>
+#include <pthread.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <semaphore.h>
+#include <sys/time.h>
 
 /* --- Structs --- */
 
-typedef struct ThreadParams {
+typedef struct ThreadParams
+{
   int pipeFile[2];
   sem_t sem_A_to_B, sem_B_to_A, sem_C_to_A;
   char message[255];
   int endOfFile; // End of file check
-  
+
 } ThreadParams;
 
 /* --- Prototypes --- */
@@ -48,154 +49,159 @@ void *ThreadB(void *params);
 void *ThreadC(void *params);
 
 /* --- Main Code --- */
-int main(int argc, char const *argv[]) {
-  
+int main(int argc, char const *argv[])
+{
+
   int result;
   pthread_t tid1, tid2, tid3; //Thread ID
   pthread_attr_t attr;
 
   ThreadParams params;
 
-    
   // Initialization
   initializeData(&params);
   pthread_attr_init(&attr);
 
   // Create pipe
-  result = pipe (params.pipeFile);
-   if (result < 0){ perror("pipe error");exit(1); }
+  result = pipe(params.pipeFile);
+  if (result < 0)
+  {
+    perror("pipe error");
+    exit(1);
+  }
 
   // Create Threads
-  if(pthread_create(&tid1, &attr, ThreadA, (void*)(&params))!=0)
+  if (pthread_create(&tid1, &attr, ThreadA, (void *)(&params)) != 0)
   {
-	  perror("Error creating threads: ");
-      exit(-1);
+    perror("Error creating threads: ");
+    exit(-1);
   }
 
- if(pthread_create(&tid2, &attr, ThreadB, (void*)(&params))!=0)
+  if (pthread_create(&tid2, &attr, ThreadB, (void *)(&params)) != 0)
   {
-	  perror("Error creating threads: ");
-      exit(-1);
+    perror("Error creating threads: ");
+    exit(-1);
   }
-if(pthread_create(&tid3, &attr, ThreadC, (void*)(&params))!=0)
+  if (pthread_create(&tid3, &attr, ThreadC, (void *)(&params)) != 0)
   {
-	  perror("Error creating threads: ");
-      exit(-1);
+    perror("Error creating threads: ");
+    exit(-1);
   }
- 
 
   // Wait on threads to finish
   pthread_join(tid1, NULL);
   pthread_join(tid2, NULL);
   pthread_join(tid3, NULL);
 
-  //Close 
-  close(params.pipeFile[0]);
-  close(params.pipeFile[1]);
+  close(params.pipeFile[0]); // Close pipe 0
+  close(params.pipeFile[1]); // Close pipe 1
 
-  pthread_cancel(tid1);
-  pthread_cancel(tid2);
-  pthread_cancel(tid3);
+  pthread_cancel(tid1); // Terminate the thread execution for thread id 1
+  pthread_cancel(tid2); // Terminate the thread execution for thread id 2
+  pthread_cancel(tid3); // Terminate the thread execution for thread id 3
   return 0;
 }
 
-void initializeData(ThreadParams *params) {
+/* --- Data Initialisation --- */
+void initializeData(ThreadParams *params)
+{
   // Initialize Sempahores
   sem_init(&(params->sem_A_to_B), 0, 1);
-  sem_init(&(params->sem_B_to_A), 0, 0); 
+  sem_init(&(params->sem_B_to_A), 0, 0);
   sem_init(&(params->sem_C_to_A), 0, 0);
 
-params -> endOfFile = 0;
-  //return;
+  params->endOfFile = 0; // Sets end of file value to 0 and initialize it
 }
 
-void *ThreadA(void *params) 
+/* --- Implementation of Thread A --- */
+void *ThreadA(void *params)
 {
-/* note: Since the data_stract is declared as pointer. the A_thread_params->message */
-ThreadParams *A_thread_params = (ThreadParams *)(params);
-static const char file[] = "data.txt";
+  /* note: Since the data_stract is declared as pointer. the A_thread_params->message */
+  ThreadParams *A_thread_params = (ThreadParams *)(params);
+  static const char file[] = "data.txt"; // data.txt is stored into local variable filename
 
-FILE *fReader = fopen(file, "r");
-  if(!fReader)
+  FILE *fReader = fopen(file, "r"); // Open file to be read
+  
+  if (!fReader) // Validation check
   {
     perror(file);
     exit(-1);
   }
 
-  while(!sem_wait(&(A_thread_params->sem_A_to_B)))
+  // Wait for sem_A_to_B to finish
+  while (!sem_wait(&(A_thread_params->sem_A_to_B)))
   {
-    if(fgets(A_thread_params->message, sizeof(A_thread_params->message), fReader) == NULL) // check null put !?
+    // Read the file 
+    if (fgets(A_thread_params->message, sizeof(A_thread_params->message), fReader) == NULL)
     {
-      A_thread_params->endOfFile = 1;	
-      sem_post(&(A_thread_params->sem_C_to_A));
+      A_thread_params->endOfFile = 1; // set endOfFile flag to 1 after reaching end of file
+      sem_post(&(A_thread_params->sem_C_to_A)); // Signal sem_C_to_A semaphore
       break;
     }
-    write(A_thread_params->pipeFile[1], A_thread_params->message, strlen(A_thread_params->message)+1);
-    sem_post(&(A_thread_params->sem_C_to_A));
+
+    // Write the data from reader to the pipe
+    write(A_thread_params->pipeFile[1], A_thread_params->message, strlen(A_thread_params->message) + 1);
+    sem_post(&(A_thread_params->sem_C_to_A)); // Signal sem_C_to_A semaphore
   }
 
-  close(A_thread_params->pipeFile[1]);
-  fclose(fReader);
+  close(A_thread_params->pipeFile[1]); // Close Pipe 1
+  fclose(fReader); // Close file
 
-  return NULL; // put (void *)
+  return NULL;
 }
 
-//printf("ThreadA\n");
-
-
-void *ThreadB(void *params) 
+/* --- Implementation of Thread B --- */
+void *ThreadB(void *params)
 {
 
-ThreadParams *B_thread_params = (ThreadParams *)(params);
- //printf("ThreadB\n");
-while(!sem_wait(&(B_thread_params->sem_C_to_A)))
+  ThreadParams *B_thread_params = (ThreadParams *)(params);
+
+  // Wait for sem_C_to_A to finish
+  while (!sem_wait(&(B_thread_params->sem_C_to_A)))
   {
+    // Read the data from pipe 0 and push it to message
     read(B_thread_params->pipeFile[0], B_thread_params->message, sizeof(B_thread_params->message));
-    sem_post(&(B_thread_params->sem_B_to_A));
-   
-    if(B_thread_params->endOfFile == 1)  // remove 1?
+    sem_post(&(B_thread_params->sem_B_to_A)); // Signal sem_B_to_A semaphore
+
+    if (B_thread_params->endOfFile == 1) // Break after reaching end of file
       break;
   }
 
-  close(B_thread_params->pipeFile[0]);
-  return NULL; // put (void *)
-
+  close(B_thread_params->pipeFile[0]); // Close Pipe 0
+  return NULL;
 }
 
+/* --- Implementation of Thread C --- */
+void *ThreadC(void *params)
+{
+  ThreadParams *C_thread_params = (ThreadParams *)(params);
+  int lineCount = 0; // Initialise line counter
 
+  static const char file[] = "output.txt"; // output.txt is stored into local variable filename
 
-void *ThreadC(void *params) {
-ThreadParams *C_thread_params = (ThreadParams *)(params);
-  int lineCount = 0;
-  // int eoh_flag = 0; // remove?
-  
-  static const char file[] = "output.txt";
-
-  FILE *fWriter = fopen(file, "w");
-  if(!fWriter)
+  FILE *fWriter = fopen(file, "w"); // Open file to write
+  if (!fWriter) // Validation check
   {
     perror(file);
     exit(-1);
   }
-  
-  while(!sem_wait(&(C_thread_params->sem_B_to_A)))
+
+// Wait for sem_B_to_A to finish
+  while (!sem_wait(&(C_thread_params->sem_B_to_A)))
   {
-    if(lineCount)
+    if (lineCount)
     {
-      fputs(C_thread_params->message, fWriter);
-      // count_lines++; // remove?
-    
-      if(C_thread_params->endOfFile == 1) // remove 1?
+      // Put the data in message from fWriter file
+      fputs(C_thread_params->message, fWriter); 
+      if (C_thread_params->endOfFile == 1) // Break after reaching end of file
         break;
     }
-    else if(strstr(C_thread_params->message, "end_header"))
-    {
+    else if (strstr(C_thread_params->message, "end_header")) // Check for end of message
       lineCount = 1;
-    }
-    sem_post(&(C_thread_params->sem_A_to_B));
-  }
-  fclose(fWriter);
 
-  return NULL; // put (void *)
-//printf("ThreadC\n");
+    sem_post(&(C_thread_params->sem_A_to_B)); // Signal sem_A_to_B semaphore
+  }
+
+  fclose(fWriter); // Close file
+  return NULL;
 }
