@@ -29,7 +29,7 @@ typedef struct ThreadParams {
   int pipeFile[2];
   sem_t sem_A_to_B, sem_B_to_A, sem_C_to_A;
   char message[255];
-  int endofFile; // End of file check
+  int endOfFile; // End of file check
   
 } ThreadParams;
 
@@ -105,30 +105,97 @@ void initializeData(ThreadParams *params) {
   sem_init(&(params->sem_B_to_A), 0, 0); 
   sem_init(&(params->sem_C_to_A), 0, 0);
   //TODO: add your code
-params -> endofFile = 0;
+params -> endOfFile = 0;
   //return;
 }
 
-void *ThreadA(void *params) {
+void *ThreadA(void *params) 
+{
   //TODO: add your code
   
 /* note: Since the data_stract is declared as pointer. the A_thread_params->message */
 ThreadParams *A_thread_params = (ThreadParams *)(params);
 static const char file[] = "data.txt";
 
-printf("ThreadA\n");
+FILE *fReader = fopen(file, "r");
+  if(!fReader)
+  {
+    perror(file);
+    exit(-1);
+  }
+
+  while(!sem_wait(&(A_thread_params->sem_A_to_B)))
+  {
+    if(fgets(A_thread_params->message, sizeof(A_thread_params->message), fReader) == NULL) // check null put !?
+    {
+      A_thread_params->endOfFile = 1;	
+      sem_post(&(A_thread_params->sem_C_to_A));
+      break;
+    }
+    write(A_thread_params->pipeFile[1], A_thread_params->message, strlen(A_thread_params->message)+1);
+    sem_post(&(A_thread_params->sem_C_to_A));
+  }
+
+  close(A_thread_params->pipeFile[1]);
+  fclose(reader);
+
+  return NULL; // put (void *)
 }
 
-void *ThreadB(void *params) {
+//printf("ThreadA\n");
+void *ThreadB(void *params) 
+{
   //TODO: add your code
 
 ThreadParams *B_thread_params = (ThreadParams *)(params);
- printf("ThreadB\n");
+ //printf("ThreadB\n");
+while(!sem_wait(&(B_thread_params->sem_write)))
+  {
+    read(B_thread_params->pipeFile[0], B_thread_params->message, sizeof(B_thread_params->message));
+    sem_post(&(B_thread_params->sem_B_to_A));
+   
+    if(B_thread_params->endOfFile == 1)  // remove 1?
+      break;
+  }
+
+  close(B_thread_params->pipeFile[0]);
+  return NULL; // put (void *)
+
 }
 
 void *ThreadC(void *params) {
   //TODO: add your code
 ThreadParams *C_thread_params = (ThreadParams *)(params);
+  int lineCount = 0;
+  // int eoh_flag = 0; // remove?
+  
+  static const char file[] = "output.txt";
 
-printf("ThreadC\n");
+  FILE *fWriter = fopen(file, "w");
+  if(!fWriter)
+  {
+    perror(file);
+    exit(-1);
+  }
+  
+  while(!sem_wait(&(C_thread_params->sem_B_to_A)))
+  {
+    if(lineCount)
+    {
+      fputs(C_thread_params->message, fWriter);
+      // count_lines++; // remove?
+    
+      if(C_thread_params->endOfFile == 1) // remove 1?
+        break;
+    }
+    else if(strstr(C_thread_params->message, "end_header"))
+    {
+      lineCount = 1;
+    }
+    sem_post(&(C_thread_params->sem_A_to_B));
+  }
+  fclose(fWriter);
+
+  return NULL; // put (void *)
+//printf("ThreadC\n");
 }
