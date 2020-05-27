@@ -67,13 +67,13 @@ pthread_t thread1, thread2;
 void init() 
 {
 	int i;
-	processes[0].pid = 1; processes[0].arrive_t = 0; processes[0].burst_t = 10;
-	processes[1].pid = 2; processes[1].arrive_t = 7; processes[1].burst_t = 31;
-	processes[2].pid = 3; processes[2].arrive_t = 12; processes[2].burst_t = 12;
-	processes[3].pid = 4; processes[3].arrive_t = 3; processes[3].burst_t = 8;
-	processes[4].pid = 5; processes[4].arrive_t = 16; processes[4].burst_t = 5;
-	processes[5].pid = 6; processes[5].arrive_t = 30; processes[5].burst_t = 19;
-	processes[6].pid = 7; processes[6].arrive_t = 15; processes[6].burst_t = 6;
+	processes[0].pid = 1; processes[0].arrive_t = 8; processes[0].burst_t = 10;
+	processes[1].pid = 2; processes[1].arrive_t = 10; processes[1].burst_t = 3;
+	processes[2].pid = 3; processes[2].arrive_t = 14; processes[2].burst_t = 7;
+	processes[3].pid = 4; processes[3].arrive_t = 9; processes[3].burst_t = 5;
+	processes[4].pid = 5; processes[4].arrive_t = 16; processes[4].burst_t = 4;
+	processes[5].pid = 6; processes[5].arrive_t = 21; processes[5].burst_t = 6;
+	processes[6].pid = 7; processes[6].arrive_t = 26; processes[6].burst_t = 2;
 	
 	//Initialise remaining time to be same as burst time
 	for (i = 0; i < PROCESSES_MAX; i++) {
