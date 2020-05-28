@@ -13,44 +13,43 @@ Assignment 3 Program_2 template
 
 */
 
-#include <pthread.h> 	/* pthread functions and data structures for pipe */
-#include <unistd.h> 	/* for POSIX API */
-#include <stdlib.h> 	/* for exit() function */
-#include <stdio.h>	/* standard I/O routines */
-#include <stdint.h>
-#include <stdbool.h>
-#include <string.h>
-#include <semaphore.h>
-#include <time.h>
 #include <fcntl.h>
 #include <errno.h>
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <sys/shm.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <pthread.h>
 #include <sys/stat.h>
+#include <semaphore.h>
 
 #define PROCESSES_MAX 7
-#define FIFO_NAME "/tmp/pipe"
 #define MESSAGELENGTH 256
+#define FIFO_NAME "/tmp/pipe"
 
-typedef struct SRTF_Params {
-  //add your variables here
-  int pid; // Process ID
-  int wait_t, arrive_t, burst_t, turnaround_t, remain_t; // Process time
+
+typedef struct SRTF_Params
+{
+    //add your variables here
+    int pid;                                               // Process ID
+    int wait_t, arrive_t, burst_t, turnaround_t, remain_t; // Process time
 } Process_Params;
 
-Process_Params processes[8]
+Process_Params processes[8];
 
-typedef struct{
-sem_t *sem_write;
-sem_t *sem_read;
-}Thread1_struct;
+typedef struct
+{
+    sem_t *sem_write;
+    sem_t *sem_read;
+} Thread1_struct;
 
-typedef struct{
-sem_t *sem_write;
-sem_t *sem_read;
-FILE *fp;
-}Thread2_struct;
+typedef struct
+{
+    sem_t *sem_read;
+    sem_t *sem_write;
+    FILE *fp;
+} Thread2_struct;
 
 // Global variables
 int n = 7, status = 0;
@@ -59,26 +58,41 @@ float avg_wait_t = 0.0, avg_turnaround_t = 0.0;
 
 // Types of Semaphore
 sem_t sem_write; // Reads from FIFO
-sem_t sem_read; // Writes to FIFO
+sem_t sem_read;  // Writes to FIFO
 
 // Threads
 pthread_t thread1, thread2;
 
-void init() 
+void init(Process_Params *processes)
 {
-	int i;
-	processes[0].pid = 1; processes[0].arrive_t = 8; processes[0].burst_t = 10;
-	processes[1].pid = 2; processes[1].arrive_t = 10; processes[1].burst_t = 3;
-	processes[2].pid = 3; processes[2].arrive_t = 14; processes[2].burst_t = 7;
-	processes[3].pid = 4; processes[3].arrive_t = 9; processes[3].burst_t = 5;
-	processes[4].pid = 5; processes[4].arrive_t = 16; processes[4].burst_t = 4;
-	processes[5].pid = 6; processes[5].arrive_t = 21; processes[5].burst_t = 6;
-	processes[6].pid = 7; processes[6].arrive_t = 26; processes[6].burst_t = 2;
-	
-	//Initialise remaining time to be same as burst time
-	for (i = 0; i < PROCESSES_MAX; i++) {
-		processes[i].remain_t = processes[i].burst_t;
-	}
+    int i;
+    processes[0].pid = 1;
+    processes[0].arrive_t = 8;
+    processes[0].burst_t = 10;
+    processes[1].pid = 2;
+    processes[1].arrive_t = 10;
+    processes[1].burst_t = 3;
+    processes[2].pid = 3;
+    processes[2].arrive_t = 14;
+    processes[2].burst_t = 7;
+    processes[3].pid = 4;
+    processes[3].arrive_t = 9;
+    processes[3].burst_t = 5;
+    processes[4].pid = 5;
+    processes[4].arrive_t = 16;
+    processes[4].burst_t = 4;
+    processes[5].pid = 6;
+    processes[5].arrive_t = 21;
+    processes[5].burst_t = 6;
+    processes[6].pid = 7;
+    processes[6].arrive_t = 26;
+    processes[6].burst_t = 2;
+
+    //Initialise remaining time to be same as burst time
+    for (i = 0; i < PROCESSES_MAX; i++)
+    {
+        processes[i].remain_t = processes[i].burst_t;
+    }
 }
 
 void initialiseSemaphore(void)
@@ -113,12 +127,9 @@ void deleteFifo(void)
     }
 }
 
-/**
- * This function creates and initialises FIFO
- */
 void createFifo(void)
 {
-    int fwrite;
+    int fdwrite;
     int FifoCheck;
 
     // Create FIFO (named pipe)
@@ -131,8 +142,8 @@ void createFifo(void)
         exit(1);
     }
 
-    //Check FIFO file handler 
-    if (fwrite = open(FIFO_NAME, O_RDONLY | O_NONBLOCK) < 0)
+    //Check FIFO file handler
+    if ((fdwrite = open(FIFO_NAME, O_RDONLY | O_NONBLOCK) < 0))
     {
         perror("Error opening file!\n");
         deleteFifo();
@@ -140,27 +151,27 @@ void createFifo(void)
     }
     else
         //FIFO obtained
-        printf("FIFO obtained, data write to thread2\n");
-    sleep(1);
+        printf("FIFO obtained, data write to Worker 2\n");
 
-    close(fwrite);
+    sleep(1);
+    close(fdwrite);
 }
 
 void doFIFO(void)
 {
-    int fwrite;
+    int fdwrite;
     // Open FIFO write
-    if (fwrite = open(FIFO_NAME, O_WRONLY) < 0)
+    if ((fdwrite = open(FIFO_NAME, O_WRONLY) < 0))
     {
         printf("Error FIFO for write.\n");
         exit(1);
     }
 
     // Write data in FIFO
-    write(fwrite, string, strlen(string));
+    write(fdwrite, string, strlen(string));
 
     // Close FIFO
-    close(fwrite);
+    close(fdwrite);
 }
 
 int writeFile(FILE *destination, char *buffer)
@@ -182,15 +193,15 @@ int writeFile(FILE *destination, char *buffer)
     return 0;
 }
 
-void process_SRTF() 
+void process_SRTF(Process_Params *processes)
 {
-	int endTime, smallest, time, remain, sum_waittime, sum_turnaroundtime = 0;
-	int i;
-	printf("+-------------------------------------+");
-    printf("\nProcess\t|Turnaround Time| Waiting Time\n");
-    printf("+-------------------------------------+");
-    processes[7].remainingTime = 9999;
-    for (time = 0; remain != n; time++)
+    int endTime, smallest, time = 0;
+    int i;
+    int remain = 0;
+    int sum_wait = 0, sum_turnaround = 0;
+    printf("\nProcess\t|  Arrive Time  |   Burst Time  |Turnaround Time|  Wait Time\n");
+    processes[7].remain_t = 9999;
+    for (time = 0; remain != PROCESSES_MAX; time++)
     {
         smallest = 7;
         for (i = 0; i <= PROCESSES_MAX; i++)
@@ -206,54 +217,37 @@ void process_SRTF()
             remain++;
             endTime = time + 1;
 
-		processes[smallest].turnaround_t = endTime-processes[smallest].arrive_t;
-			
-	    processes[smallest].wait_t = endTime-processes[smallest].burst_t-processes[smallest].arrive_t;
-			
-	    avg_wait_t += processes[smallest].wait_t;
-			
-	    avg_turnaround_t += processes[smallest].turnaround_t;
+            printf("\nP[%d]\t|\t%d\t|\t%d\t|\t%d\t|\t%d\t", smallest + 1, processes[smallest].arrive_t, processes[smallest].burst_t, endTime - processes[smallest].arrive_t, endTime - processes[smallest].burst_t - processes[smallest].arrive_t);
+
+            sum_wait += endTime - processes[smallest].burst_t - processes[smallest].arrive_t;
+            sum_turnaround += endTime - processes[smallest].arrive_t;
+
+            status++;
         }
     }
-	
+
+    printf("\n\nAverage waiting time = %f\n", sum_wait * 1.0 / n);
+    printf("Average Turnaround time = %f\n", sum_turnaround * 1.0 / n);
+
+    avg_wait_t = sum_wait * 1.0 / n;
+    avg_turnaround_t = sum_turnaround * 1.0 / n;
 }
 
-//Simple calculate average wait time and turnaround time function
-void calculate_average() {
-	avg_wait_t /= PROCESSES_MAX;
-	avg_turnaround_t /= PROCESSES_MAX;
-}
-
-//Print results, taken from sample
-void print_results() {
-	
-	printf("Process Schedule Table: \n");
-	
-	printf("\tProcess ID\tArrival Time\tBurst Time\tWait Time\tTurnaround Time\n");
-	
-	for (i = 0; i<PROCESSES_MAX; i++) {
-	  	printf("\t%d\t\t%d\t\t%d\t\t%d\t\t%d\n", processes[i].pid,processes[i].arrive_t, processes[i].burst_t, processes[i].wait_t, processes[i].turnaround_t);
-	}
-	
-	status ++;
-
-	printf("\nAverage wait time: %fs\n", avg_wait_t);
-	
-	printf("\nAverage turnaround time: %fs\n", avg_turnaround_t);
-}
 /* this function calculates CPU SRTF scheduling, writes waiting time and turn-around time to th FIFO */
 void *worker1(Thread1_struct *params)
 {
     // Check write semaphore availability
     sem_wait(params->sem_write);
 
+    Process_Params processes[PROCESSES_MAX];
+
     // Initialise processes
-    init(processes, PROCESSES_MAX);
+    init(processes);
 
     printf("initialisation successful!\n");
 
     // Srtf scheduling
-    srtfProcess(processes, PROCESSES_MAX);
+    process_SRTF(processes);
 
     printf("scheduling success\n");
 
@@ -268,13 +262,13 @@ void *worker1(Thread1_struct *params)
     // Write data to FIFO
     doFIFO();
 
-    printf("\nThread 1 completion status !1");
+    printf("\nCompletion status Worker 1 !1");
 
-    // Signal read semaphore 
+    // Signal read semaphore
     sem_post(params->sem_read);
     //sem_wait(data->sem_write);
 
-    printf("\nThread 1 completion status !2\n");
+    printf("\nCompletion status Worker 1 !2\n");
 
     pthread_exit(NULL);
 }
@@ -282,28 +276,28 @@ void *worker1(Thread1_struct *params)
 /* reads the waiting time and turn-around time through the FIFO and writes to text file */
 void *worker2(Thread2_struct *params)
 {
-  //Check read semaphore
+    //Check read semaphore
     sem_wait(params->sem_read);
 
-    int n, fwrite;
+    int n, fdwrite;
     int eof = 0;
     char string[MESSAGELENGTH];
 
     //open FIFO(read mode)
-    if (fwrite = open(FIFO_NAME, O_RDONLY | O_NONBLOCK) < 0)
+    if ((fdwrite = open(FIFO_NAME, O_RDONLY | O_NONBLOCK) < 0))
     {
-        perror("Could not open FIFO to read.\n");
-        exit(EXIT_FAILURE);
+        perror("Could not open FIFO.\n");
+        exit(1);
     }
 
-    printf("Thread 2 completion status !1\n");
+    printf("Completion status Worker 2 !1\n");
 
     //Read data from FIFO
-    n = read(fwrite, string, MESSAGELENGTH);
+    n = read(fdwrite, string, MESSAGELENGTH);
 
     //check if it is empty
     if (n == 0)
-        printf("FIFO is empty.\n");
+        printf("Empty FIFO.\n");
     //check for EOF
     else if (!eof)
         writeFile(params->fp, string);
@@ -314,9 +308,9 @@ void *worker2(Thread2_struct *params)
     printf("Cleaning the FIFO....\n");
 
     //close FIFO
-    close(fwrite);
+    close(fdwrite);
     printf("Closing FIFO...\n");
-    printf("thread 2 completion status !2\n");
+    printf("Completion status Worker 2 !2\n");
 
     //Remove FIFO
     deleteFifo();
@@ -328,35 +322,35 @@ void *worker2(Thread2_struct *params)
 }
 
 /* this main function creates named pipe and threads */
-int main(int arg, char *argc[])
+int main(int argc, char *argv[])
 {
-	/* creating a named pipe(FIFO) with read/write permission */
-	// add your code 
+    /* creating a named pipe(FIFO) with read/write permission */
+    // add your code
 
-	/* initialize the parameters */
-	 // add your code 
-	
-	/* create threads */
-	 // add your code
-	
-	/* wait for the thread to exit */
-	//add your code
-	
-	// if terminal arguments not equal to two
-    if (arg != 2)
+    /* initialize the parameters */
+    // add your code
+
+    /* create threads */
+    // add your code
+
+    /* wait for the thread to exit */
+    //add your code
+
+    // if arguments is not 2
+    if (argc != 2)
     {
         printf("Program expecting 2 args!\n");
         return -1;
     }
 
     printf("Program starting \n");
-    // Program arg1 is the output text file
-    FILE *stream = fopen(argc[1], "w");
+    // output text file
+    FILE *stream = fopen(argv[1], "w");
 
-    // Remove FIFO if it exists
+    // Remove FIFO 
     unlink(FIFO_NAME);
 
-    // Check if destination file can be opened for writing
+    // Check for destination file to write
     if (!stream)
     {
         printf("Error opening destination file.\n");
@@ -367,25 +361,25 @@ int main(int arg, char *argc[])
     initialiseSemaphore();
     printf("semaphore init successful\n");
 
-    // Initialise ans set up shared data structture
+    // Initialise shared data structture
     Thread1_struct a = {&sem_write, &sem_read};
     Thread2_struct b = {&sem_read, &sem_write, stream};
 
     // Create threads
     if (pthread_create(&thread1, NULL, (void *)worker1, &a) != 0)
     {
-        printf("Error creating thread1.\n");
+        printf("Error creating Worker 1.\n");
         exit(1);
     }
-    printf("Thread 1 created successfully!\n");
+    printf("Worker 1 created successfully!\n");
     if (pthread_create(&thread2, NULL, (void *)worker2, &b) != 0)
     {
-        printf("Error creating thread2.\n");
+        printf("Error creating Worker 2.\n");
         exit(1);
     }
-    printf("\nThread 2 created successfully!\n");
+    // printf("\nWorker 2 created successfully!\n");
 
-    // Wait for thread exit
+    // Thread exit
     pthread_join(thread1, NULL);
     pthread_join(thread2, NULL);
 
@@ -393,7 +387,7 @@ int main(int arg, char *argc[])
     sem_destroy(&sem_write);
     sem_destroy(&sem_read);
 
-    // Check if the destination file was closed successfully
+    // Destination file close check
     if (!stream)
     {
         if (fclose(stream))
@@ -407,5 +401,4 @@ int main(int arg, char *argc[])
     deleteFifo();
 
     exit(0);
-	return 0;
 }
