@@ -168,7 +168,6 @@ void FIFO_Exec()
     }
 
     write(writefd, string, strlen(string));
-    //printf("string data: %s \n", string);
 
     close(writefd);
 }
@@ -259,7 +258,7 @@ void SRTF_Process()
 void stringStore()
 {
     sprintf(string,
-            "Average wait time: %.2f \nAverage turnaround time: %.2f \n",
+            "Average wait time: %f \nAverage turnaround time: %f \n",
             averageWaitTime, averageTurnAroundTime);
 }
 
